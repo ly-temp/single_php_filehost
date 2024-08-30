@@ -11,7 +11,7 @@ class CONFIG
     const MAX_ID_LENGTH = 24; //max. length of the random file ID, set to MIN_ID_LENGTH to disable
     const STORE_PATH = 'files/'; //directory to store uploaded files in
     const LOG_PATH = null; //path to log uploads + resulting links to
-    const DOWNLOAD_PATH = '%s'; //the path part of the download url. %s = placeholder for filename
+    const DOWNLOAD_PATH = 'files/%s'; //the path part of the download url. %s = placeholder for filename
     const MAX_EXT_LEN = 7; //max. length for file extensions
     const EXTERNAL_HOOK = null; //external program to call for each upload
     const AUTO_FILE_EXT = false; //automatically try to detect file extension for files that have none
@@ -141,11 +141,18 @@ function store_file(string $name, string $tmpfile, bool $formatted = false) : vo
 
     for ($len = $id_length; ; ++$len)
     {
-        for ($n=0; $n<=$tries_per_len; ++$n)
+        for ($n=1; $n<=$tries_per_len; ++$n)
         {
             $id = rnd_str($len);
-            $basename = $id . (empty($ext) ? '' : '.' . $ext);
-            $target_file = CONFIG::STORE_PATH . $basename;
+
+            $storeFolder = CONFIG::STORE_PATH.$id;
+            if(!file_exists($storeFolder)){
+                mkdir($storeFolder, 0750, true);
+            }
+
+            $basename = $storeFolder.'/'.pathinfo($name)['filename'].'_'.$n.'.'.pathinfo($name)['extension'];
+
+            $target_file = $basename;
 
             if (!file_exists($target_file))
                 break 2;
@@ -178,7 +185,7 @@ function store_file(string $name, string $tmpfile, bool $formatted = false) : vo
     }
 
     //print the download link of the file
-    $url = sprintf(CONFIG::SITE_URL().'/'.CONFIG::DOWNLOAD_PATH, $basename);
+    $url = sprintf(CONFIG::SITE_URL().'/'.$basename);
 
     if ($formatted)
     {
